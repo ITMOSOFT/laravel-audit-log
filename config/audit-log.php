@@ -27,7 +27,13 @@ return [
 
     'queue' => [
         'enabled' => false,
-        'events' => ['queued', 'processing', 'processed', 'failed', 'released'],
+        'include_exception_message' => false,
+        'events' => [
+            'queued',
+            'processing',
+            'processed',
+            'failed',
+        ],
     ],
 
     'retention_days' => 365,

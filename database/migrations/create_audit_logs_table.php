@@ -13,7 +13,9 @@ return new class extends Migration {
                 $table->string('log_name')->nullable()->index();
                 $table->string('event')->index();
                 $table->text('description')->nullable();
-                $table->nullableMorphs('subject');
+                $table->string('subject_type')->nullable();
+                $table->string('subject_id')->nullable();
+                $table->index(['subject_type', 'subject_id']);
                 $table->string('actor_type')->nullable();
                 $table->string('actor_id')->nullable();
                 $table->string('actor_name')->nullable();
@@ -21,6 +23,7 @@ return new class extends Migration {
                 $table->json('new_values');
                 $table->json('properties');
                 $table->uuid('batch_uuid')->nullable()->index();
+                $table->string('batch_name')->nullable()->index();
                 $table->timestamp('created_at')->useCurrent();
 
                 $table->index(['actor_type', 'actor_id']);

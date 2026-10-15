@@ -4,6 +4,7 @@ namespace ItmoSoft\AuditLog\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 
 class AuditLog extends Model
 {
@@ -52,4 +53,39 @@ class AuditLog extends Model
     {
         return $query->whereBetween('created_at', [$from, $to]);
     }
+
+    /**
+     * Return audit activity groups for a subject, newest activity first.
+     *
+     * @return Collection<int, array{
+     *     batch_uuid: string,
+     *     name: ?string,
+     *     created_at: mixed,
+     *     events: Collection<int, static>
+     * }>
+     */
+    public static function activityGroupsForSubject(
+        Model $subject
+    ): Collection {
+        $entries = static::query()
+            ->forSubject($subject)
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->get();
+
+        return $entries
+            ->groupBy('batch_uuid')
+            ->map(function (Collection $events, string $uuid): array {
+                $latest = $events->first();
+
+                return [
+                    'batch_uuid' => $uuid,
+                    'name' => $latest->batch_name,
+                    'created_at' => $latest->created_at,
+                    'events' => $events->sortBy('id')->values(),
+                ];
+            })
+            ->values();
+    }
+
 }

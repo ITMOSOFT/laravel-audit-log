@@ -4,19 +4,36 @@ namespace ItmoSoft\AuditLog;
 
 use Illuminate\Support\ServiceProvider;
 use ItmoSoft\AuditLog\Services\ActorResolver;
+use ItmoSoft\AuditLog\Services\AuditGroupContext;
 use ItmoSoft\AuditLog\Services\AuditLogger;
 
 class AuditLogServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__.'/../config/audit-log.php', 'audit-log');
+        $this->mergeConfigFrom(
+            __DIR__.'/../config/audit-log.php',
+            'audit-log',
+        );
 
-        $this->app->singleton(ActorResolver::class, fn ($app) => new ActorResolver($app));
-        $this->app->singleton(AuditLogger::class, fn ($app) => new AuditLogger(
-            $app,
-            $app->make(ActorResolver::class),
-        ));
+        $this->app->singleton(
+            ActorResolver::class,
+            fn ($app) => new ActorResolver($app),
+        );
+
+        $this->app->scoped(
+            AuditGroupContext::class,
+            fn ($app) => new AuditGroupContext(),
+        );
+
+        $this->app->scoped(
+            AuditLogger::class,
+            fn ($app) => new AuditLogger(
+                $app,
+                $app->make(ActorResolver::class),
+                $app->make(AuditGroupContext::class),
+            ),
+        );
     }
 
     public function boot(): void
@@ -28,7 +45,9 @@ class AuditLogServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
 
         if (config('audit-log.queue.enabled', false)) {
-            $this->app->make(Queue\RegisterQueueListeners::class)->register();
+            $this->app->make(
+                Queue\RegisterQueueListeners::class
+            )->register();
         }
     }
 }

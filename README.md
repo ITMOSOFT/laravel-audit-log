@@ -5,7 +5,7 @@ Audit logging for Laravel applications, including manual business events, automa
 ## Requirements
 
 - PHP 8.3+
-- Laravel 12 or 13
+- Continuous support for Laravel 12 or 13
 
 ## Installation
 

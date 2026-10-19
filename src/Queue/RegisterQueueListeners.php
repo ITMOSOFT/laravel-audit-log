@@ -2,6 +2,7 @@
 
 namespace ItmoSoft\AuditLog\Queue;
 
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
@@ -14,7 +15,7 @@ class RegisterQueueListeners
     private bool $registered = false;
 
     public function __construct(
-        private readonly AuditLogger $logger,
+        private readonly Application $app,
     ) {}
 
     public function register(): void
@@ -113,7 +114,7 @@ class RegisterQueueListeners
             }
         }
 
-        $this->logger->record(
+        $this->app->make(AuditLogger::class)->record(
             event: $event,
             properties: $properties,
             description: $jobName

@@ -11,6 +11,7 @@ use Illuminate\Contracts\Queue\Job;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
 use ItmoSoft\AuditLog\Models\AuditLog as AuditLogModel;
+use ItmoSoft\AuditLog\Services\AuditLogger;
 use ItmoSoft\AuditLog\Tests\TestCase;
 
 class QueueAuditingTest extends TestCase
@@ -50,6 +51,52 @@ class QueueAuditingTest extends TestCase
             $table->string('batch_name')->nullable();
             $table->timestamp('created_at')->useCurrent();
         });
+    }
+
+    public function test_queue_listener_resolves_a_fresh_logger_after_scope_reset(): void
+    {
+        $instances = [];
+
+        app()->scoped(
+            AuditLogger::class,
+            function ($app) use (&$instances): AuditLogger {
+                $logger = \Mockery::mock(AuditLogger::class);
+                $logger->shouldReceive('record')->once();
+
+                $instances[] = $logger;
+
+                return $logger;
+            },
+        );
+
+        // First queue event resolves the logger for the first scope.
+        Event::dispatch(new JobQueued(
+            'redis',
+            'emails',
+            'job-first-scope',
+            'App\\Jobs\\FirstJob',
+            '{}',
+            null,
+        ));
+
+        $this->assertCount(1, $instances);
+
+        // Simulate Laravel's scope reset between worker iterations.
+        app()->forgetScopedInstances();
+        \Illuminate\Support\Facades\Facade::clearResolvedInstances();
+
+        // Second queue event must resolve a new logger.
+        Event::dispatch(new JobQueued(
+            'redis',
+            'emails',
+            'job-second-scope',
+            'App\\Jobs\\SecondJob',
+            '{}',
+            null,
+        ));
+
+        $this->assertCount(2, $instances);
+        $this->assertNotSame($instances[0], $instances[1]);
     }
 
     public function test_it_records_a_queued_job(): void
@@ -168,7 +215,7 @@ class QueueAuditingTest extends TestCase
         $this->assertSame('job-789', $entry->properties['job_id']);
         $this->assertSame('critical', $entry->properties['queue']);
     }
-    
+
     public function test_it_can_store_a_bounded_exception_message_when_enabled(): void
     {
         config([

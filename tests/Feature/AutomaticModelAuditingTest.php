@@ -125,7 +125,7 @@ class AutomaticModelAuditingTest extends TestCase
 
     public function test_it_respects_configured_model_events(): void
     {
-        config()->set('audit-log.model_events', ['created']);
+        config()->set('audit-log.model.events', ['created']);
 
         $product = AuditedProduct::create([
             'name' => 'Keyboard',

@@ -76,7 +76,7 @@ trait Auditable
         }
 
         $configuredEvents = config(
-            'audit-log.model_events',
+            'audit-log.model.events',
             ['created', 'updated', 'deleted'],
         );
 

@@ -18,9 +18,10 @@ A lightweight Laravel package for tracking Eloquent model changes, recording app
 
 ## Requirements
 
-- PHP and Laravel versions supported by the package's `composer.json`.
+- PHP 8.3 or later.
+- Laravel 12 or Laravel 13.
 - A configured Laravel database connection.
-- A queue connection and running worker if you use asynchronous jobs.
+- A queue connection and running worker if you enable queue auditing.
 
 ## Installation
 
@@ -36,7 +37,15 @@ Run the Laravel database migrations:
 php artisan migrate
 ```
 
-The package includes an audit-log migration. If your installation requires publishing package configuration or migrations, use the publish tags exposed by the installed package's service provider.
+The package automatically loads its audit-log migration. You do not need to publish the migration separately.
+
+To publish the configuration file for customization, run:
+
+```bash
+php artisan vendor:publish --tag=audit-log-config
+```
+
+After installation, run `php artisan migrate` to create the audit-log table.
 
 ### Configuration
 
@@ -272,6 +281,27 @@ Activities are returned newest first. Entries without a batch UUID remain separa
 This API is useful for building order histories, administrative timelines, and audit-history pages.
 
 ## Queue auditing
+
+Queue lifecycle auditing is disabled by default. To customize the queue settings, publish the configuration:
+
+```bash
+php artisan vendor:publish --tag=audit-log-config
+```
+
+Then set the following options in `config/audit-log.php`, preserving the other existing configuration values:
+
+```php
+'queue' => [
+    'enabled' => true,
+    'include_exception_message' => false,
+    'events' => [
+        'queued',
+        'processing',
+        'processed',
+        'failed',
+    ],
+],
+```
 
 The package includes queue-listener integration for supported queue lifecycle events. It also supports auditing model changes made while queued jobs execute.
 

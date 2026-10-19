@@ -313,6 +313,44 @@ class AutomaticModelAuditingTest extends TestCase
         );
     }
 
+    public function test_ungrouped_entries_are_returned_as_separate_activities(): void
+    {
+        $product = AuditedProduct::create([
+            'name' => 'Keyboard',
+            'price' => 2500,
+        ]);
+
+        $product->update([
+            'name' => 'Mechanical Keyboard',
+        ]);
+
+        $entries = AuditLogModel::query()
+            ->where('subject_type', $product->getMorphClass())
+            ->where('subject_id', (string) $product->getKey())
+            ->orderBy('id')
+            ->get();
+
+        $this->assertGreaterThanOrEqual(
+            2,
+            $entries->count(),
+            'The regression test requires at least two audit entries.',
+        );
+
+        // Simulate legacy or manually inserted entries without a batch UUID.
+        foreach ($entries as $entry) {
+            $entry->batch_uuid = null;
+            $entry->batch_name = null;
+            $entry->save();
+        }
+
+        $activities = AuditLogModel::activityGroupsForSubject($product);
+
+        $this->assertCount(
+            $entries->count(),
+            $activities,
+            'Entries without a batch UUID must not be merged into one activity.',
+        );
+    }
 }
 
 class AuditedProduct extends Model

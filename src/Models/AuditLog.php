@@ -58,7 +58,7 @@ class AuditLog extends Model
      * Return audit activity groups for a subject, newest activity first.
      *
      * @return Collection<int, array{
-     *     batch_uuid: string,
+     *     batch_uuid: ?string,
      *     name: ?string,
      *     created_at: mixed,
      *     events: Collection<int, static>
@@ -74,12 +74,15 @@ class AuditLog extends Model
             ->get();
 
         return $entries
-            ->groupBy('batch_uuid')
-            ->map(function (Collection $events, string $uuid): array {
+            ->groupBy(
+                fn (self $entry): string => $entry->batch_uuid
+                    ?? 'entry:' . $entry->getKey()
+            )
+            ->map(function (Collection $events): array {
                 $latest = $events->first();
 
                 return [
-                    'batch_uuid' => $uuid,
+                    'batch_uuid' => $latest->batch_uuid,
                     'name' => $latest->batch_name,
                     'created_at' => $latest->created_at,
                     'events' => $events->sortBy('id')->values(),
